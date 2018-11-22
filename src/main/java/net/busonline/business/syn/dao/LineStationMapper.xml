@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="net.busonline.business.syn.dao.LineStationMapper">
+	<!--获取自动的基础平台ID  -->
+	<select id="getLineIds" resultType="String">
+		SELECT line_id FROM t_line_station where line_station = '0' and line_type = '0'		
+	</select>
+	<!--插入新增基础平台线路信息  -->
+	<insert id="insertStation">
+		insert into t_line_station(city,line_name,line_station,line_type,line_id,createtime,type,city_code) values  
+		<foreach collection="list" item="item" index="index" separator="," >  
+       			 (#{item.city},#{item.line_name},'0','0',#{item.line_id},now(),0,#{item.code})  
+    	</foreach>  
+	</insert>
+	<!--更新失效  -->
+	<update id="updateInvalidStation" parameterType="java.util.List" >
+      	update t_line_station set line_type = '1',createtime = now() where line_id in
+        <foreach collection="list" item="lineIds" open="(" separator="," close=")">
+   			#{lineIds}
+ 		</foreach>	
+	</update>
+	<!--查询自动线路名称  -->
+	<select id="getlineName" resultType="String" parameterType="String">
+		select line_name from t_line_station where line_station = '0' and line_type = '0' and city_code = #{cityCode}	
+	</select>
+	<!--批量更新线路名称  -->
+	<update id="updateStation" parameterType="java.util.List">
+        <foreach collection="list" item="item" index="index" open="" close="" separator=";"> 
+	             update t_line_station   
+	              <set>
+	                line_name = #{item.line_name}
+	              </set>
+	             where line_id = #{item.line_id}
+         </foreach>  
+	</update>
+	<!--同步更新对接百度线路数据  -->
+	<!--删除对接表  -->
+	<!-- <delete id="deleteDetail">
+		truncate  ad_device_detail
+	</delete>
+	新增车辆信息 
+	<insert id="insertDetail">
+		insert into ad_device_detail(
+		line_name,media_device_id,screen_num,province,city,poi_name,address,create_time) 
+		select case when t1.relation_line is NULL then t1.line_name ELSE t1.relation_line  END as linename,
+		t.device_id,'2',t1.province,t1.city,t1.station_name,t1.formatted_address,now() 
+		from t_bus_line t,t_line_station t1
+		where t.station_id = t1.id
+		and t.status = '0'
+		and t1.line_type = '0'
+	</insert> -->
+	<!--根据城市和线路名称获取ID  -->
+	<select id="getIdByLineName" resultType="String">
+		select CONCAT(id,'')as id from t_line_station where line_type = '0' and line_station = '0' and  city_code = #{0} and line_name = #{1}
+	</select>
+
+</mapper>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="net.busonline.business.lbsmaterial.lbsdao.LBSMaterialMapper">
+    <select id="getMaterials" resultType="java.lang.String">
+        SELECT
+            baidu_file_name AS baidu_file_name
+        FROM
+            lbs_material.`material`
+    </select>
+    <select id="getVersion" resultType="java.lang.String">
+        SELECT
+            id AS id
+        FROM
+            lbs
+        WHERE
+            `status` = 0
+        ORDER BY id DESC
+LIMIT 1
+    </select>
+    <select id="getDownloadMaterials" resultType="java.util.Map">
+        SELECT
+        node.ad_name AS ad_name,
+        picture.pi_file_name AS cctv_name,
+        picture.url AS fastdfs_url
+        FROM
+        lbs lbs,
+        poi poi,
+        node node,
+        picture picture
+        WHERE poi.lbs_id = lbs.id
+        AND node.poi_id = poi.id
+        AND picture.node_id = node.id
+        <if test="null != list and list.size > 0">
+            AND node.ad_name NOT IN
+            <foreach item="item" index="index" collection="list" open="("
+                     separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        GROUP BY
+        node.ad_name,
+        picture.pi_file_name,
+        picture.url
+    </select>
+    <insert id="insertMaterial">
+        INSERT INTO material (
+            pi_file_name,
+            baidu_file_name,
+            group_file_url,
+            creattime
+          )
+        VALUES
+            (
+                #{map.cctv_name},#{map.ad_name},#{map.fastdfs_url},NOW());
+    </insert>
+    <select id="getcctv_url" resultType="java.util.Map">
+        SELECT
+        pi_file_name,
+        baidu_file_name
+        FROM
+        `material`
+        WHERE 1=1
+        <if test="null != list and list.size > 0">
+            AND baidu_file_name IN
+            <foreach item="item" index="index" collection="list" open="("
+                     separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+    </select>
+    <select id="getdeltacctv_url" resultType="java.util.Map">
+        SELECT
+        baidu_file_name AS '百度名称',
+        pi_file_name as 'CCTV名称'
+        FROM
+        `material`
+        WHERE 1=1
+        <if test="null != list and list.size > 0">
+            AND baidu_file_name NOT IN
+            <foreach item="item" index="index" collection="list" open="("
+                     separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+    </select>
+</mapper>

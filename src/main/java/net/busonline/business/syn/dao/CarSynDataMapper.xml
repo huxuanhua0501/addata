@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="net.busonline.business.syn.dao.CarSynDataMapper">
+	<!--更新失效车辆 -->
+	<update id="updateInvalidCars" parameterType="java.util.List">
+		update t_bus_line set status = '1',updatetime=now() where line_status !='1' and  mac_address in
+ 		<foreach collection="list" item="car" open="(" separator="," close=")">
+   			#{car}
+ 		</foreach>
+	</update>
+ 	<select id="getInvalidCarsMac" resultType="String" parameterType="Integer">
+ 		select id from t_bus_line where status = '1' limit 0,#{number} 	
+ 	</select>
+	<select id="getFicCarMac" resultType="String" parameterType="Integer">
+		select id from t_bus_line where type = '1' and status = '0' and line_status != '2' ORDER BY RAND() limit #{number}
+	</select>
+	<!--批量更新车辆  -->
+	<update id="updateCar" parameterType="java.util.List">
+        <foreach collection="list" item="item" index="index" open="" close="" separator=";"> 
+	             update t_bus_line   
+	              <set>
+	              	 name=#{item.name},cityname=#{item.cityname},appkey = #{item.appkey},mac_address=#{item.mac_address},
+	                status='0',type='0',line_status ='0',company_name=#{item.company_name},createtime=now()
+	              </set>
+	             where id = #{item.id}
+         </foreach>  
+	</update>
+	<!--批量更新线路ID  -->
+	<update id="updateCarBymac" parameterType="java.util.List">
+        <foreach collection="list" item="item" index="index" open="" close="" separator=";"> 
+	             update t_bus_line   
+	              <set>
+	              	   station_id = #{item.station_id},appkey=#{item.appkey},company_name=#{item.company_name}
+	              </set>
+	             where mac_address = #{item.mac_address}
+	             and status = '0' and line_status = '0'
+         </foreach>  
+	</update>
+	
+	<!--获取根据线路获取扩容车辆ID  -->
+	<select id="getIdByLineNamek" resultType="String" parameterType = "net.busonline.business.syn.pojo.CarBean">
+		 select t.id From t_bus_line t ,t_line_station t1,ad_city t2 where t.station_id = t1.id 
+		 and t1.city_code = t2.code  and t1.line_name = #{name} and t.type = '1' 
+		 and t2.name = #{cityname} LIMIT 0,1    
+	</select>
+	<!--获取根据线路获取失效车辆ID  -->
+	<select id="getIdByLineNames" resultType="String" parameterType = "net.busonline.business.syn.pojo.CarBean">
+		 select t.id From t_bus_line t ,t_line_station t1,ad_city t2 where t.station_id = t1.id 
+		 and t1.city_code = t2.code  and t1.line_name = #{name} and t.status = '1' 
+		 and t2.name = #{cityname} LIMIT 0,1    
+	</select>
+	
+	<!--获取城市下的扩容车辆ID  -->
+	<select id="getIdByCityNamek" resultType="String" parameterType = "String">
+		 select t.id From t_bus_line t ,t_line_station t1,ad_city t2 where t.station_id = t1.id 
+		 and t1.city_code = t2.code  and t.type = '1' and t2.name = #{cityName} LIMIT 0,1  
+	</select>
+	
+	<!--获取城市下车辆ID  -->
+	<select id="getIdByCityNames" resultType="String" parameterType = "String">
+		 select t.id From t_bus_line t ,t_line_station t1,ad_city t2 where t.station_id = t1.id 
+		 and t1.city_code = t2.code  and t.status = '1' and t2.name = #{cityName} LIMIT 0,1  
+	</select>
+	
+	<!--更新车辆信息  -->
+	<update id="updateCarById" parameterType="net.busonline.business.syn.pojo.CarBean">
+       update t_bus_line set name=#{name},cityname=#{cityname},appkey = #{appkey},mac_address=#{mac_address},
+	               status='0',type='0',line_status ='0',company_name=#{company_name},createtime=now()
+	               where id = #{id}
+	</update>
+	
+	<!--获取自动有效中的自有车辆  -->
+	<select id="getManualCars" resultType="String">
+		select mac_address from t_bus_line where  status = '0' and type = '0' and line_status = '0'
+	</select>
+	<!--删除同步到基础平台的手动车辆  -->
+	<delete id="deleManualCar" parameterType="java.util.List">
+		update t_bus_line set status = '1',updatetime = now() where  status = '0' and line_status !='0' and mac_address in
+ 		<foreach collection="list" item="car" open="(" separator="," close=")">
+   			#{car}
+ 		</foreach>
+	</delete>
+	
+
+</mapper>

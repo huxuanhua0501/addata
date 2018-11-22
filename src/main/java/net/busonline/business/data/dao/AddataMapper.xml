@@ -1,0 +1,723 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="net.busonline.business.data.dao.AddataMapper">
+    <select id="getCityGps" resultType="java.util.Map">
+      SELECT
+         IFNULL(`code`,'') AS city,
+         IFNULL(lat,'')AS lat,
+         IFNULL(lon,'') AS  lon
+      FROM
+	  `ad_city`;
+    </select>
+    <select id="getWhitelist" resultType="java.lang.String">
+    SELECT
+      materiel_url AS picture_name
+    FROM
+        `ad_material`
+    WHERE
+        review_type = 1
+    </select>
+    <insert id="insertBdWhitelist">
+
+        <selectKey keyProperty="count" resultType="int" order="BEFORE">
+            select count(1) from ad_material where materiel_url = #{map.materiel_url}
+        </selectKey>
+        <if test="count == 0">
+            INSERT INTO ad_material (
+            picture_name,
+            materiel_url,
+            third,
+            review_type,
+            source,
+            operator,
+            create_time
+            )
+            VALUES
+            (#{map.picture_name},
+            #{map.materiel_url},
+            #{map.third},
+            2,
+            2,
+            0,
+            now())
+        </if>
+        <if test="count>0">
+            select count(1) from ad_material;
+        </if>
+    </insert>
+    <select id="getStrategy" resultType="java.util.Map">
+        SELECT
+        IFNULL(ads.id,'') AS strategy_id,
+        IFNULL(ads.third,'') AS third,
+        IFNULL(ads.citys,'') AS citys,
+        IFNULL(ads.week_and_hour,'') AS times,
+        IFNULL(ads.total,'') AS total
+        FROM
+        `ad_strategy` AS ads
+        WHERE
+        ads.`status` = 1
+        AND ads.sdate &lt;= #{date}
+        AND ads.edate &gt;= #{date}
+        AND ads.`ad_id` = #{adid}
+
+
+    </select>
+    <select id="getLbsStrategy" resultType="java.util.Map">
+        SELECT
+        IFNULL(ads.id,'') AS strategy_id,
+        IFNULL(ads.third,'') AS third,
+        IFNULL(ads.throw_line_dates,'') AS throw_line_dates,
+        IFNULL(IF(${ad_type}=1,ads.throw_share*lrc.lscreen_num_per_share,ads.throw_share*lrc.bigscreen_num_per_share),'') AS total,
+        IFNULL(ads.material_ids,'') AS material_ids
+        FROM
+        `lbs_strategy` AS ads,
+        lbs_resource_city lrc
+        WHERE
+        ads.`status` = 1
+        AND ads.citycode = lrc.citycode
+        AND ads.sdate &lt;=  CURDATE()
+        AND ads.edate &gt;=  CURDATE()
+        AND lrc.type=1
+        AND ads.`ad_id` = #{adid}
+
+
+    </select>
+
+    <select id="getFailureStrategy" resultType="java.util.Map">
+        SELECT
+        IFNULL(`unique`,'') AS adslot_id
+        FROM
+        `ad`
+        WHERE
+        status = 2
+
+
+    </select>
+    <select id="getCitys" resultType="java.lang.String">
+        SELECT
+        GROUP_CONCAT(NAME) AS citys
+        FROM
+        `ad_city`
+        WHERE code in
+        <foreach item="item" index="index" collection="cityid" open="("
+                 separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+
+    <select id="getAd" resultType="java.util.Map">
+        SELECT
+        `id` AS  adslot_id,
+        type AS ad_type
+        FROM
+        `ad`
+        WHERE `status`=1
+    </select>
+
+    <select id="getMac" resultType="java.lang.String">
+        SELECT DISTINCT
+        mac_address AS mac
+        FROM
+        `t_bus_line`
+        WHERE
+        `status` = '0'
+
+    </select>
+    <select id="getBusByMac" resultType="java.util.Map">
+        SELECT
+        IFNULL(tbl.device_id, '') AS device_id,
+        IFNULL(tbl.company_name, '') AS company,
+        IFNULL('', 'ip') AS ip,
+        IFNULL(tbl.type, '') AS type,
+        IFNULL(tls.id, '') AS line_id,
+        IFNULL(tls.line_name, '') AS line_name,
+        IFNULL(tls.city_code, '') AS city_code,
+        IFNULL(ad.`name`, '') AS city,
+        IFNULL(LOWER(tbl.mac_address),'') AS mac_address
+        FROM
+        t_bus_line tbl,
+        t_line_station tls,
+        ad_city ad
+        WHERE
+        tbl.station_id = tls.id
+        AND ad.`code`=tls.city_code
+        AND tls.line_type = '0'
+        AND tbl.`status` ='0'
+        ORDER BY tbl.mac_address
+    </select>
+    <select id="getDeviceIdByMac" resultType="java.util.Map">
+        SELECT
+        IFNULL(device_id,'') AS device_id
+        FROM
+        t_bus_line
+        WHERE
+        status=1
+    </select>
+    <select id="getAllCitys" resultType="java.lang.String">
+        SELECT DISTINCT
+        IFNULL(city_code, '') AS city_code
+        FROM
+        `t_line_station`
+    </select>
+    <select id="getAllLineByCity" resultType="java.util.Map">
+        SELECT
+        IFNULL(tbl.device_id, '') AS device_id,
+        IFNULL(tbl.company_name, '') AS company,
+        IFNULL('', 'ip') AS ip,
+        IFNULL(tbl.type, '') AS type,
+        IFNULL(tls.id, '') AS line_id,
+        IFNULL(tls.line_name, '') AS line_name,
+        IFNULL(tls.city_code, '') AS city_code,
+        IFNULL(ad.`name`, '') AS city,
+        IFNULL(LOWER(tbl.mac_address),'') AS mac_address
+        FROM
+        t_bus_line tbl,
+        t_line_station tls,
+        ad_city ad
+        WHERE
+        tbl.station_id = tls.id
+        AND ad.`code`=tls.city_code
+        AND tls.line_type = '0'
+        AND tbl.`status` = '0'
+        AND tbl.type='1'
+        AND  tbl.line_status!='2'
+        AND tls.city_code = #{city}
+    </select>
+    <update id="updateLineBydeviceid">
+        <selectKey keyProperty="count" resultType="int" order="BEFORE">
+            select count(1) from t_bus_line where mac_address = #{mac}
+        </selectKey>
+        <if test="count == 0">
+            UPDATE t_bus_line
+            SET mac_address =#{mac},
+            updatetime=now(),
+            line_status='2',
+            station_id=#{testLineId}
+            WHERE
+            device_id = #{device_id}
+        </if>
+        <if test="count>0">
+            select count(1) from t_bus_line;
+        </if>
+    </update>
+    <select id="selectlineids" resultType="java.lang.String">
+        SELECT
+        line_id AS lineids
+        FROM
+        `ad_device_group_line`
+        WHERE
+        type = 2
+    </select>
+    <select id="getAllBaiduConfigByline" resultType="java.util.Map">
+        SELECT
+        IFNULL(aa.ad_id, '') AS adslot_id,
+        IFNULL(aa.third_adslot_id, '') AS baidu_adslot_id,
+        IFNULL(ag.appsid, '') baidu_app_id,
+        IFNULL(al.line_id, '') AS line_id,
+        IFNULL(ad.type, '') AS adslot_type
+        FROM
+        ad_device_adinfo aa,
+        ad_device_group ag,
+        ad_device_group_line al,
+        ad ad
+        WHERE
+        aa.device_group_id = ag.id
+        AND al.device_group_id = ag.id
+        AND ad.id = aa.ad_id
+        AND al.type = 2
+        AND ad.`status` = 1
+        AND ag.type = '1'
+    </select>
+    <select id="getAllBaiduConfigByCityCode" resultType="java.util.Map">
+        SELECT
+        IFNULL(ag.appsid, '') AS baidu_app_id ,
+        IFNULL(aa.ad_id, '') AS adslot_id,
+        IFNULL(aa.third_adslot_id, '') AS baidu_adslot_id ,
+        IFNULL(ad.type, '') AS adslot_type,
+        IFNULL(ts.id, '')AS line_id
+        FROM
+        ad_device_group_line al,
+        ad_device_group ag,
+        ad_device_adinfo aa,
+        t_line_station ts,
+        ad ad
+        WHERE
+        al.device_group_id = ag.id
+        AND aa.device_group_id = ag.id
+        AND ad.id = aa.ad_id
+        AND ts.city_code = al.city_code
+        AND al.type = 1
+        AND ad.`status` = 1
+        AND ag.type = '1'
+    </select>
+    <select id="getRealTimeData" resultType="java.util.Map">
+        SELECT
+        IFNULL(CONCAT(ad_id,strategy_id),'')AS mapkey,
+        SUM(resource_sum) AS num
+        FROM
+        `ad_report`
+        WHERE
+        datetime = CURDATE()
+        AND `hour` = #{hour}
+        GROUP BY
+        ad_id,
+        strategy_id,
+        datetime
+    </select>
+    <select id="getLbsRealTimeData" resultType="java.util.Map">
+        SELECT
+        IFNULL(CONCAT(ad_id, strategy_id,line),'') AS mapkey,
+        SUM(return_success_num) AS num
+        FROM
+        `lbs_report`
+        WHERE
+        datetime = CURDATE()
+        GROUP BY
+        ad_id,
+        strategy_id,
+        line,
+        datetime
+    </select>
+    <select id="getAdPriority" resultType="java.lang.String">
+        SELECT
+        REPLACE (NAME, '>', ',') AS adpriority
+        FROM
+        `lbs_priority`;
+    </select>
+    <select id="getMaterialBus" resultType="java.util.Map">
+        SELECT
+        IFNULL(id, '') AS material_id,
+        '' AS ad_title,
+        IFNULL(materiel_url, '') AS image_src,
+        '' AS description
+        FROM
+        `ad_material`
+        WHERE
+        review_type = 1
+        AND id in
+        <foreach item="item" index="index" collection="list" open="("
+                 separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+    <select id="positionVehicle" resultType="java.lang.String">
+        SELECT
+        LOWER(mac_address) AS mac
+        FROM
+        `t_bus_line`
+        WHERE
+        STATUS = 0
+        AND line_status = 2
+    </select>
+
+    <select id="selectTestLineId" resultType="java.lang.String">
+        SELECT
+        tlinetable.id AS station_id
+        FROM
+        (
+        SELECT
+        tls.city_code AS city
+        FROM
+        `t_bus_line` tbl,
+        t_line_station tls
+        WHERE
+        tbl.station_id = tls.id
+        AND device_id = #{deviceid}
+        ) citytable,
+        t_line_station tlinetable
+        WHERE
+        citytable.city = tlinetable.city_code
+        AND type = 1
+        AND line_type = 0
+
+    </select>
+    <select id="selectCptMaterial" resultType="java.util.Map">
+        SELECT
+        IFNULL(ada.ad_id, '') AS adslot_id,
+        IFNULL(co.order_id, '') AS strategy_id,
+        IFNULL(cmi.adslot_id, '') AS third_adslot_id,
+        IFNULL(am.materiel_url, '') AS image_src,
+        IFNULL(am.id, '') AS material_id,
+        '' AS ad_title,
+        '' AS description
+        FROM
+        cpt_order co,
+        cpt_material_info cmi,
+        ad_material am,
+        ad_device_adinfo ada
+        WHERE
+        co.`status` = 2
+        AND am.type='CPT'
+        AND am.review_type=1
+        AND cmi.order_id = co.order_id
+        AND am.md5 = cmi.md5
+        AND ada.third_adslot_id = cmi.adslot_id
+    </select>
+    <select id="selectCptlineId" resultType="java.util.Map">
+        SELECT
+        IFNULL(r.order_id, '') AS strategy_id,
+        IFNULL(r.dev_id, '') AS dev_id,
+        IFNULL(r.adslot_id, '') AS third_adslot_id,
+        IFNULL(d.ad_id, '') AS adslot_id,
+        IFNULL(lrc.citycode, '') AS citycode,
+        IFNULL(ad.type, '') AS type,
+        IFNULL(
+
+        IF (
+        ad.type =1,
+        r.amount * r.pv,
+		r.amount * r.pv
+        ),
+        ''
+        ) AS total
+        FROM
+        cpt_resource_info r,
+        ad_device_adinfo d,
+        ad ad,
+        t_line_station tls,
+        lbs_resource_city lrc,
+        cpt_order co
+        WHERE
+        r.adslot_id = d.third_adslot_id
+        AND ad.id = d.ad_id
+        AND tls.id = r.dev_id
+        AND lrc.citycode = tls.city_code
+        AND co.order_id = r.order_id
+        AND r.order_time = CURDATE()
+        AND ad.`status` = 1
+        AND co.`status` = 2
+        AND lrc.type=2
+    </select>
+    <select id="cptCount" resultType="java.util.Map">
+        SELECT
+        IFNULL(ad_id, '') AS adslot_id,
+        IFNULL(strategy_id, '') AS strategy_id,
+        IFNULL(third_ad_id, '') AS third_adslot_id,
+        IFNULL(line, '') AS dev_id,
+        IFNULL(sum(return_success_num), 0) AS count
+        FROM
+        `cpt_report`
+        WHERE
+        datetime = CURDATE()
+       GROUP BY
+            adslot_id,
+            strategy_id,
+            third_adslot_id,
+            dev_id
+    </select>
+    <select id="getBaiduFileName" resultType="java.lang.String">
+        SELECT
+        picture_name
+        FROM
+        `ad_material`
+        WHERE
+        cdn_url IS NULL
+
+    </select>
+    <select id="getfullBaiduFileName" resultType="java.lang.String">
+        SELECT
+        picture_name
+        FROM
+        `ad_material`
+      <!--  WHERE 1=1
+        <if test="null != list and list.size > 0">
+            AND picture_name NOT IN
+            <foreach item="item" index="index" collection="list" open="("
+                     separator="," close=")">
+                #{item}
+            </foreach>
+        </if>-->
+    </select>
+    <update id="updateMaterial">
+        UPDATE ad_material
+        SET cdn_url = #{cdn_url} WHERE picture_name=#{baidu_name}
+    </update>
+    <select id="getCDNMaterial" resultType="java.util.Map">
+        SELECT
+        IFNULL(materiel_url,'')AS material_url ,
+        IFNULL(cdn_url,'') AS cdn_url
+        FROM
+        `ad_material`;
+    </select>
+    <select id="getPreheatingCdn_url" resultType="java.lang.String">
+        SELECT
+        cdn_url
+        FROM
+        `ad_material`
+        WHERE
+        cdn_type IS NULL
+        AND cdn_url IS NOT NULL
+    </select>
+    <update id="updateCdn_type">
+        update ad_material
+        SET cdn_type = '1'
+        WHERE
+        cdn_url = #{cdn_url}
+    </update>
+    <select id="selectBusTotal" resultType="java.util.Map">
+        SELECT
+            IFNULL(station_id, '') AS dev_id,
+            IFNULL(COUNT(station_id), '') AS total
+        FROM
+            `t_bus_line`
+        WHERE
+            station_id IS NOT NULL
+        GROUP BY
+            station_id
+    </select>
+    <select id="selectCptMonitor" resultType="java.util.Map">
+        SELECT
+              IFNULL(am.id, '') AS material_id,
+              IFNULL(cm.monitor_url, '') AS monitor_url
+        FROM
+            `cpt_monitor` cm
+        LEFT JOIN cpt_material_info cmi ON cm.material_info_id = cmi.material_info_id
+        LEFT JOIN ad_material am ON am.md5 = cmi.md5
+        LEFT JOIN cpt_order co ON co.order_id = cmi.order_id
+        LEFT JOIN cpt_resource_info cri ON cri.order_id = cmi.order_id
+        WHERE
+            co.`status` = 2
+        AND cri.order_time = CURDATE()
+        AND am.type = 'CPT'
+        AND am.review_type = 1
+        AND am.id IS NOT NULL
+        AND cm.monitor_url IS NOT NULL
+    </select>
+    <select id="selectH" resultType="java.lang.String">
+SELECT DISTINCT
+	lcase(t.mac_address)
+FROM
+	t_bus_line t,
+	t_line_station t1
+WHERE
+	t.station_id = t1.id
+AND t1.city_code = '510100'
+AND t.mac_address NOT IN (
+	'BC9C31F6DF30',
+	'BC9C31F6E0AC',
+	'34B3548BA6CD',
+	'34B3548B5702',
+	'C4473FF0370C',
+	'C4473FEE09B1',
+	'BC9C31F6DB67',
+	'34B3548B3894',
+	'C4473FEC2DA2',
+	'34B3548B63FF',
+	'34B3548B9F3B',
+	'34B3548BB202',
+	'34B3548B683A',
+	'34B3548BA480',
+	'34B3548BAE39',
+	'105172ED1342',
+	'C4473FE5E441',
+	'34B3548BD8AD',
+	'34B3548BA2B8',
+	'C4473FE9A5AE',
+	'34B3548B5EF3',
+	'C4473FEB9586',
+	'C4473FEC4903',
+	'34B3548BA1FA',
+	'C4473FEA0035',
+	'34B3548BCD9E',
+	'34B3548B6C16',
+	'34B3548B8B1C',
+	'34B3548BAEBE',
+	'34B3548BCB3E',
+	'C4473FED9C1F',
+	'34B3548B4201',
+	'34B3548BD1B3',
+	'34B3548BB7A6',
+	'34B3548B892E',
+	'34B3548BD64D',
+	'34B3548B9DE5',
+	'BC9C31F6AF1D',
+	'BC9C31F6D83A',
+	'34B3548BD1A0',
+	'34B3548BA9FE',
+	'34B3548BAABC',
+	'34B3548BBA29',
+	'C4473FECE64E',
+	'34B3548B9593',
+	'BC9C31F6EF12',
+	'34B3548BC15F',
+	'34B3548B9463',
+	'34B3548B54B5',
+	'34B3548BB75A',
+	'34B3548B9CC8',
+	'BC9C31F6C4B4',
+	'BC9C31F6E36B',
+	'BC9C31F6E157',
+	'34B3548B86BB',
+	'34B3548BBC66',
+	'34B3548B4BCD',
+	'C4473FE5E71A',
+	'34B3548B4D49',
+	'C4473FEA07B9',
+	'C4473FEC3551',
+	'34B3548BD89A',
+	'34B3548B930D',
+	'34B3548B92D4',
+	'34B3548B911F',
+	'34B3548B6C3C',
+	'C4473FED385D',
+	'C4473FE59F37',
+	'34B3548B9346',
+	'C4473FEC86A8',
+	'34B3548BCE6F',
+	'34B3548B6270',
+	'34B3548B94C2',
+	'BC9C31F6DEBE',
+	'34B3548B6BF0',
+	'34B3548B372B',
+	'34B3548B924F',
+	'34B3548B339B',
+	'BC9C31F6D975',
+	'34B3548B2BAA',
+	'BC9C31F6EF4B',
+	'34B3548BC60C',
+	'34B3548B903B',
+	'C4473FE67003',
+	'34B3548B3245',
+	'3CF8081BE2F8',
+	'3CF8082E982F',
+	'105172ED4B4A',
+	'105172ECF7EA',
+	'3CF80809747A',
+	'3CF8080A1447',
+	'3CF8081C1479',
+	'3CF8081A4A2E',
+	'3CF8082E2AFC',
+	'105172E8BAF0',
+	'3CF80811D4E2',
+	'3CF80811FE5F',
+	'3CF8081C1CEF',
+	'3CF8082E61E4',
+	'3CF8081C1B01',
+	'3CF8082E87C6',
+	'105172E88DBC',
+	'105172ED294F',
+	'3CF8082ED8F8',
+	'34B3548B9489',
+	'34B3548BA1C1',
+	'C4473FEBBAF4',
+	'34B3548BD309',
+	'C4473FEE02B2',
+	'BC9C31F6E922',
+	'BC9C31F6C62E',
+	'BC9C31F6AAE5',
+	'34B3548B97A7',
+	'BC9C31F6AFFE',
+	'34B3548B73A8',
+	'BC9C31F6C1FF',
+	'BC9C31F6D1E9',
+	'34B3548B2E0A',
+	'C4473FEA761D',
+	'C4473FEA72C8',
+	'34B3548B690B',
+	'34B3548BA8E1',
+	'34B3548B99CE',
+	'34B3548B3CCF',
+	'34B3548BD744',
+	'C4473FF0883B',
+	'BC9C31F6E5B8',
+	'34B3548B7EB7',
+	'C4473FE90DA0',
+	'34B3548BADC7',
+	'C4473FEC6713',
+	'34B3548B6BA4',
+	'34B3548B7206',
+	'34B3548BC5D3',
+	'BC9C31F6D213',
+	'34B3548B9605',
+	'C4473FEBD016',
+	'34B3548B9275',
+	'BC9C31F6EB82',
+	'BC9C31F6C508',
+	'34B3548B2CDA',
+	'34B3548BABFF',
+	'34B3548BD4D1',
+	'34B3548B5573',
+	'34B3548BD154',
+	'34B3548B8506',
+	'BC9C31F6B4E1',
+	'34B3548B879F',
+	'E036767EF3F1',
+	'C4473FEABE54',
+	'BC9C31F6B659',
+	'34B3548B99A8',
+	'BC9C31F6D4F2',
+	'34B3548BD63A',
+	'34B3548BBA65',
+	'34B3548B3B07',
+	'34B3548BBA06',
+	'C4473FEC0500',
+	'C4473FE9A4EC',
+	'34B3548B9E57',
+	'BC9C31F6CBEC',
+	'BC9C31F6B017',
+	'BC9C31F6D2E5',
+	'34B3548BAA70',
+	'BC9C31F6C05B',
+	'BC9C31F6E8D6',
+	'BC9C31F6A0C9',
+	'34B3548B5B63',
+	'BC9C31F6D5EE',
+	'C4473FEB90B9',
+	'34B3548B5209',
+	'C4473FEA0380',
+	'105172E7F55A',
+	'34B3548BA78B',
+	'C4473FECF87E',
+	'C4473FF0D656',
+	'34B3548B9320',
+	'C4473FECBA0B',
+	'34B3548BD32F',
+	'105172E900E4',
+	'105172ECEC1A',
+	'105172ED69A6',
+	'9C28EFCB3F4B',
+	'105172E8DFB9',
+	'3CF8082E38EB',
+	'3CF8082E37F2',
+	'105172ED0B62',
+	'3CF8082EB7A3',
+	'105172E8AB46',
+	'105172E8C0B7',
+	'105172E7FCF2',
+	'105172E8F804',
+	'BC9C31F6ECC5',
+	'34B3548B7B4D',
+	'C4473FED672B',
+	'C4473FED2528',
+	'C4473FECEE91',
+	'34B3548B832B',
+	'34B3548B5787',
+	'34B3548B8883',
+	'34B3548BA103',
+	'BC9C31F6A525',
+	'34B3548B8D43',
+	'34B3548BA6BA',
+	'BC9C31F6BDE5',
+	'34B3548B6C03',
+	'34B3548B3BEB',
+	'BC9C31F6C937',
+	'34B3548B5E5B',
+	'34B3548B6224',
+	'C4473FE5E4D9',
+	'34B3548B81AF',
+	'34B3548BD1C6',
+	'C4473FE5DD94',
+	'34B3548B3952',
+	'BC9C31F6E57F',
+	'34B3548B955A',
+	'C4473FEB0D09',
+	'34B3548B5C6D',
+	'C4473FEC3442',
+	'34B3548B7900',
+	'34B3548B327E',
+	'34B3548B3DA0',
+	'C4473FEA735B',
+	'C4473FED1F9A'
+)
+    </select>
+</mapper>

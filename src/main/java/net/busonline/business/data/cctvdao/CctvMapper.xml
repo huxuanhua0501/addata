@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="net.busonline.business.data.cctvdao.CctvMapper">
+	<select id="getInvalidCarMac" resultType="String">
+	  	 SELECT
+			 b.mac_address
+			 FROM
+			 terminal b 
+		     where b.status !='2'
+	</select>
+    <select id="getBasePlatCarMac" resultType="String">
+    	 SELECT
+			 b.mac_address
+			FROM
+			    bus_line a
+			INNER  JOIN terminal b ON a.id = b.line_id
+			INNER JOIN  area t1  on a.area_id= t1.id
+			INNER JOIN bus_company t2 on a.company_id = t2.id
+			where a.status = '1'
+			and b.status = '2' 
+    </select>
+    <select id="getBasePlatCars" parameterType="java.util.List" resultType="net.busonline.business.syn.pojo.CarBean">
+ 		   SELECT
+			  a.NAME as name ,b.mac_address as mac_address ,b.app_key  as appkey,t1.name as cityname,t2.name as company_name,t1.id as city_id
+			FROM
+			    bus_line a
+			INNER  JOIN terminal b ON a.id = b.line_id
+			INNER JOIN  area t1  on a.area_id= t1.id
+			INNER JOIN bus_company t2 on a.company_id = t2.id
+			where a.status = '1'
+			and b.status='2'
+			<!-- and t1.name in ('北京','上海','广州','成都','深圳') -->
+			and b.mac_address not in
+		   <foreach collection="list" item="car" open="(" separator="," close=")">
+   				#{car}
+ 		   </foreach>
+    </select>
+    
+    <!--获取失效线路ID  -->
+    <select id="getInvalidLineId" resultType="String">
+    		SELECT
+			CONCAT(a.id,'') as id
+			FROM
+			    bus_line a
+			where a.status = '0'
+    </select>
+    <!--获取线路新增车辆  -->
+   <select id="getLineInfoById"  parameterType="java.util.List" resultType="net.busonline.business.syn.pojo.StationBean">
+   		SELECT
+			case t1.id 
+   			when '1' then '110000'
+		 	when '4' then '310000'
+			when '10' then '440100'
+			when '24' then '510100'
+			when '11' then '440300'
+			when '100' then '110000'
+			when '101' then '110000'
+			else null end as code,
+			CONCAT(a.id,'') as line_id,t1.name as city,a.name as line_name
+			FROM
+			    bus_line a
+			INNER  JOIN terminal b ON a.id = b.line_id
+			INNER JOIN  area t1  on a.area_id= t1.id
+			where a.status = '1'
+			and b.status ='2'
+			and a.id not in 
+			<foreach collection="list" item="lineIds" open="(" separator="," close=")">
+   				#{lineIds}
+ 		   </foreach>
+			GROUP BY a.id
+   </select>
+   <!--根据线路名称 -->
+   <select id="getLineInfoByLineName"  parameterType="java.util.List" resultType="net.busonline.business.syn.pojo.StationBean">
+   		SELECT
+   			case t1.id 
+   			when '1' then '110000'
+		 	when '4' then '310000'
+			when '10' then '440100'
+			when '24' then '510100'
+			when '11' then '440300'
+			when '100' then '110000'
+			when '101' then '110000'
+			else null end as code,
+			CONCAT(a.id,'') as line_id,t1.name as city,a.name as line_name
+			FROM
+			    bus_line a
+			INNER  JOIN terminal b ON a.id = b.line_id
+			LEFT JOIN  area t1  on a.area_id= t1.id
+			where a.status = '1'
+			and b.status ='2'
+			and a.name not in 
+			<foreach collection="list" item="lineNames" open="(" separator="," close=")">
+   				#{lineNames}
+ 		   </foreach>
+ 		    and t1.id = #{city_id}
+			GROUP BY a.id
+   </select>
+   <select id="getBasePlatData" resultType="net.busonline.business.syn.pojo.CarBean">
+   		 SELECT
+			  a.NAME as name ,b.mac_address as mac_address,b.app_key as appkey,t2.name as company_name,
+			  case t1.id 
+   			when '1' then '110000'
+		 	when '4' then '310000'
+			when '10' then '440100'
+			when '24' then '510100'
+			when '11' then '440300'
+			when '100' then '110000'
+			when '101' then '110000'
+			else null end as city_code
+			FROM
+			    bus_line a
+			INNER  JOIN terminal b ON a.id = b.line_id
+			INNER JOIN  area t1  on a.area_id= t1.id
+			INNER JOIN bus_company t2 on a.company_id = t2.id
+			where a.status = '1'
+			and b.status = '2' 
+   </select>
+   
+   
+   
+
+</mapper>
